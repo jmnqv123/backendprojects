@@ -1,0 +1,193 @@
+timestamp microservice:
+const express = require('express');
+const MongoClient = require('mongodb').MongoClient;
+const app = express();
+
+const url = 'mongodb://localhost:27017';
+const dbName = 'timestamps';
+
+app.get('/timestamp/:timestamp', (req, res) => {
+  MongoClient.connect(url, { useNewUrlParser: true }, (err, client) => {
+    if (err) {
+      res.status(500).send('Error connecting to the database');
+      return;
+    }
+
+    const db = client.db(dbName);
+    const timestamps = db.collection('timestamps');
+
+    // Check if the timestamp is in the correct format (ISO 8601)
+    const timestamp = req.params.timestamp;
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      res.status(400).send('Invalid timestamp');
+      return;
+    }
+
+    // Check if the timestamp already exists in the database
+    timestamps.findOne({ timestamp: timestamp }, (err, result) => {
+      if (err) {
+        res.status(500).send('Error querying the database');
+        return;
+      }
+
+      if (result) {
+        // If the timestamp already exists, return it
+        res.send(result);
+      } else {
+        // If the timestamp does not exist, insert it and return it
+        timestamps.insertOne({ timestamp: timestamp }, (err, result) => {
+          if (err) {
+            res.status(500).send('Error inserting into the database');
+            return;
+          }
+
+          res.send(result.ops[0]);
+        });
+      }
+    });
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Timestamp microservice listening on port 3000');
+});
+
+another way:
+var express = require('express');
+var app = express();
+
+// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
+// so that your API is remotely testable by FCC 
+var cors = require('cors');
+app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
+
+// http://expressjs.com/en/starter/static-files.html
+app.use(express.static('public'));
+
+// http://expressjs.com/en/starter/basic-routing.html
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + '/views/index.html');
+});
+
+
+// your first API endpoint... 
+app.get("/api/hello", function (req, res) {
+  res.json({greeting: 'hello API'});
+});
+
+ 2.Request Header Parser Microservice
+
+// listen for requests :)
+var listener = app.listen(process.env.PORT, function () {
+  console.log('Your app is listening on port ' + listener.address().port);
+});
+
+const express = require('express');
+const app = express();
+
+app.get('/api/whoami', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const language = req.headers['accept-language'].split(',')[0];
+  const software = req.headers['user-agent'].split(') ')[0].split(' (')[1];
+
+  res.json({
+    ipaddress: ip,
+    language: language,
+    software: software
+  });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
+});
+
+3.url shortener:
+const express = require('express')
+const app = express()
+const port = 3000
+
+const urlShortener = require('node-url-shortener')
+
+app.use(express.json())
+
+app.post('/shorten', (req, res) => {
+  const longUrl = req.body.longUrl
+
+  // Shorten the URL
+  urlShortener.short(longUrl, (err, shortUrl) => {
+    if (err) {
+      res.status(500).send(err)
+    } else {
+      res.send(shortUrl)
+    }
+  })
+})
+
+app.get('/:shortUrl', (req, res) => {
+  const shortUrl = req.params.shortUrl
+
+  // Expand the short URL
+  urlShortener.expand(shortUrl, (err, longUrl) => {
+    if (err) {
+      res.status(500).send(err)
+    } else {
+      res.redirect(longUrl)
+    }
+  })
+})
+
+app.listen(port, () => {
+  console.log(`URL shortener listening at http://localhost:${port}`)
+})
+
+4.exercise tracker:
+class ExerciseTracker {
+  constructor() {
+    this.exerciseLog = {};
+  }
+
+  addExercise(exerciseName, sets, reps, weight) {
+    this.exerciseLog[exerciseName] = { sets, reps, weight };
+  }
+
+  getExercise(exerciseName) {
+    return this.exerciseLog[exerciseName] || null;
+  }
+
+  getAllExercises() {
+    return this.exerciseLog;
+  }
+}
+
+const tracker = new ExerciseTracker();
+tracker.addExercise("Bench Press", 3, 8, 185);
+tracker.addExercise("Deadlift", 1, 5, 225);
+console.log(tracker.getExercise("Bench Press")); // { sets: 3, reps: 8, weight: 185 }
+console.log(tracker.getExercise("Squat")); // null
+console.log(tracker.getAllExercises()); // { Bench Press: { sets: 3, reps: 8, weight: 185 }, Deadlift: { sets: 1, reps: 5, weight: 225 } }
+
+file metadata service:
+import os
+from datetime import datetime
+
+class FileMetadataService:
+    def get_metadata(self, file_path: str) -> dict:
+        """
+        Retrieves metadata for the specified file.
+        """
+        stat = os.stat(file_path)
+        modified_time = datetime.fromtimestamp(stat.st_mtime)
+        return {
+            'name': os.path.basename(file_path),
+            'size': stat.st_size,
+            'modified_time': modified_time.isoformat()
+        }
+
+# Example usage
+service = FileMetadataService()
+metadata = service.get_metadata('/path/to/file.txt')
+print(metadata)
+# Output: {'name': 'file.txt', 'size': 1234, 'modified_time': '2022-01-01T00:00:00'}
+
